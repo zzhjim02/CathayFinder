@@ -207,6 +207,62 @@ cathayfinder\
 
 ---
 
+## ⚖️ 免责声明与法律定位
+
+CathayFinder 是一个纯信息索引与检索工具。
+
+本软件的功能仅限于：
+
+- 读取用户本地的元数据文件（如读秀 SSID 对应表、网盘文件目录、维基共享资源目录等）；
+- 对上述元数据进行全文索引与检索；
+- 向用户展示检索结果，包括书名、作者、ISBN、SSID、以及用户本地或外部渠道中可能存在的存储位置信息。
+
+本软件不提供、不存储、不分发任何受版权保护的内容。
+
+- 本软件不包含任何电子书文件；
+- 本软件不提供任何下载链接或下载功能；
+- 本软件不代理用户执行任何获取、下载、传输行为；
+- 本软件输出的所有信息，均来自用户自行提供的本地元数据文件。
+
+**用户责任：**
+
+用户在使用本软件时，应自行确保其获取和使用任何资料的行为符合所在国家或地区的法律法规。本软件仅提供信息指引，用户根据指引自行进行的任何操作，与本软件作者无关。
+
+**开源目的：**
+
+本软件开源的目的在于分享元数据索引与检索的技术实现，供学术研究和个人学习参考。本软件不鼓励、不支持、不参与任何侵犯版权的行为。
+
+---
+
+## English Disclaimer
+
+### Disclaimer and Legal Positioning
+
+CathayFinder is a pure information indexing and retrieval tool.
+
+The software's functionality is limited to:
+
+- Reading user-provided local metadata files (e.g., Duxiu SSID mapping tables, cloud storage file lists, Wikimedia Commons catalogs);
+- Building full-text indexes over such metadata;
+- Displaying search results to the user, including book title, author, ISBN, SSID, and possible storage locations in the user's local or external channels.
+
+This software does not provide, store, or distribute any copyrighted content.
+
+- It contains no ebook files;
+- It provides no download links or download functionality;
+- It does not perform any acquisition, download, or transfer actions on behalf of the user;
+- All output information originates solely from metadata files provided by the user.
+
+**User Responsibility:**
+
+Users are solely responsible for ensuring that their use of any materials complies with the laws and regulations of their jurisdiction. This software provides information guidance only. Any actions taken by users based on such guidance are unrelated to the software author.
+
+**Open Source Purpose:**
+
+This software is open-sourced to share the technical implementation of metadata indexing and retrieval for academic research and personal study. It does not encourage, support, or participate in any copyright-infringing activities.
+
+---
+
 ## 📄 许可
 
 [GPL-3.0](LICENSE) © Cathay 人文社科工具链
