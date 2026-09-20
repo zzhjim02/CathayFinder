@@ -47,7 +47,7 @@
 
 | 下载方式 | 说明 |
 |:-------|:-----|
-| 📥 百度网盘（密码 2026） | `<待填：百度网盘分享链接>`（程序 + `data\` 数据库一起，约 27 GB） |
+| 📥 百度网盘（密码 2026） | [CathayFinder 1.0.0 公开版](https://pan.baidu.com/s/1zXqrVhrcLZDo8YbWpT6hLA?pwd=2026)（程序 + 数据库 + CathayIndex，解压即用；不含个人网盘资料库） |
 | 🐙 GitHub Releases | [CathayFinder v1.0.0](https://github.com/zzhjim02/CathayFinder/releases/tag/v1.0.0)（Assets 下 `CathayFinder.exe`） |
 | 💻 源码 | 本仓库源码：`py -3 -m pip install PyQt5 pypinyin zhconv` 后 `py -3 main.py` |
 
