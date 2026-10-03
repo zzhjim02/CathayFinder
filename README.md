@@ -8,8 +8,7 @@
 
 [![license](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows%2010%2B-brightgreen)]()
-[![python](https://img.shields.io/badge/python-3.10%2B-blue)]()
-[![GitHub release](https://img.shields.io/github/v/release/zzhjim02/CathayFinder)]()
+[![version](https://img.shields.io/badge/version-v1.1.0-orange)]()
 
 只做**精准匹配**（完整包含你输入的那串字），不做模糊搜索 —— 搜「布罗代尔」只会出真正含
 「布罗代尔」的记录，不会塞给你一堆无关书。
@@ -20,25 +19,30 @@
 
 ## 🔗 Cathay 人文社科工具链
 
-> 🧭 主线一句话：**CathayIndex 建本地库 → CathayFinder 查书 → CathayPDG 把查到的书（读秀/超星 PDG）转成 PDF → CathayOCR 识别 → CathayShelf 著录归架 → CathayReader 双栏校勘。**
+这是一整套给人文社科研究者用的**本地**工具：从「找到一本书」，到「把它变成能搜、能读、能引用的 PDF」，再到「在上万本书里一秒检索」——每一步一个小程序，**各自独立，只挑你用得上的那一步就行**。
 
-| 步骤 | 工具 | 功能 | 状态 |
+| 步骤 | 工具 | 一句话 | 版本 |
 |:---:|---|---|---|
-| ① | [CathayIndex](https://github.com/zzhjim02/CathayIndex) | v1.0.0 | 把本地文件夹建成可检索的「本地文件库」 |
-| ② | **CathayFinder（你在这里）** | v1.0.0 | 综合性图书检索引擎：11 个渠道精准查书（找 SSID / 找路径） |
-| ③ | [CathayPDG](https://github.com/zzhjim02/CathayPDG) | v0.1.5 | 读秀/超星 **PDG 批量转 PDF**：解压解密、横竖排分柜（把查到的书变成 PDF） |
-| ④ | [CathayOCR](https://github.com/zzhjim02/CathayOCR) | v1.2.4 | 扫描件 OCR，产出可搜索文字层 PDF |
-| ⑤ | [CathayShelf](https://github.com/zzhjim02/CathayShelf) | v0.4.5 | 图书著录自动化整理（一 PDF 一夹、命名规范化） |
-| ⑥ | [CathayReader](https://github.com/zzhjim02/CathayReader) | v1.0.0 | 双栏校勘阅读器 |
+| ⓪ | [CathayRepair](https://github.com/zzhjim02/CathayRepair) | PDF 打不开、一翻就崩 → 先把它抢救回来 | v1.0.0 |
+| ① | [CathayPDG](https://github.com/zzhjim02/CathayPDG) | 读秀 / 超星的 PDG 压缩包 → PDF | v0.1.6 |
+| ② | [CathayOCR](https://github.com/zzhjim02/CathayOCR) | 扫描件做 OCR → 能搜索、能复制的 PDF | v1.2.4 |
+| ③ | [CathayRestore](https://github.com/zzhjim02/CathayRestore) | 把 OCR 出来的 TXT 写回 PDF，做成双层 | v1.0.0 |
+| ④ | [CathayExtract](https://github.com/zzhjim02/CathayExtract) | 已经是双层 PDF → 直接把文字抽成 TXT | v1.2.3 |
+| ⑤ | [CathayShelf](https://github.com/zzhjim02/CathayShelf) | 批量建档归位、规范命名、繁简转换 | v0.4.6 |
+| **⑥** | **CathayFinder（你在这里）** | 11 个渠道查这本书在哪（找书号 / 找路径） | **v1.1.0** |
+| ⑦ | [CathayHub](https://github.com/zzhjim02/CathayHub) | **索引 + 全库检索 + 浏览阅读，四合一的日常入口** | v0.3.16 |
 
-**备用软件（四个，按需取用）**
+> 🧭 **最常用的一条线**：⑥ 查到书 → ① 转成 PDF → ② 让它能搜 → ⑤ 著录归架 → ⑦ 检索、翻开。
+> 每一步都能单独用，不强制串起来；整套**纯本地、不联网、不动你的原件**。
 
-| 工具 | 什么时候用 |
+**已成历史（功能已并入后面的工具，代码还能跑）**
+
+| 工具 | 现状 |
 |---|---|
-| [CathayRepair](https://github.com/zzhjim02/CathayRepair) | ④ OCR 前：PDF 目录结构坏了先修一下 |
-| [CathayRestore](https://github.com/zzhjim02/CathayRestore) | ④ 之后：把 OCR 的 TXT 写回成竖排可搜索文字层 |
-| [CathayExtract](https://github.com/zzhjim02/CathayExtract) | ④ 的替代入口：已经有字层的双层 PDF，直接抽 TXT |
-| [CathaySimplify](https://github.com/zzhjim02/CathaySimplify) | 繁简转换 / 编码规范化（功能已并入 ⑤ CathayShelf） |
+| [CathayIndex](https://github.com/zzhjim02/CathayIndex) | 已并入 ⑥ CathayFinder 的「本地文件库索引」页签，以及 ⑦ CathayHub Indexer |
+| [CathayViewer](https://github.com/zzhjim02/CathayViewer) | 已并入 ⑦ CathayHub Viewer |
+| [CathayReader](https://github.com/zzhjim02/CathayReader) | 已由 ⑦ CathayHub Viewer 取代 |
+| [CathaySimplify](https://github.com/zzhjim02/CathaySimplify) | 已并入 ⑤ CathayShelf 的「繁简转换 / 编码规范化」 |
 
 ---
 
@@ -46,18 +50,21 @@
 
 | 下载方式 | 说明 |
 |:-------|:-----|
-| 📥 百度网盘（密码 2026） | [CathayFinder 1.0.0 公开版](https://pan.baidu.com/s/1zXqrVhrcLZDo8YbWpT6hLA?pwd=2026)（程序 + 数据库 + CathayIndex，解压即用；不含个人网盘资料库） |
-| 🐙 GitHub Releases | [CathayFinder v1.0.0](https://github.com/zzhjim02/CathayFinder/releases/tag/v1.0.0)（Assets 下 `CathayFinder.exe`） |
+| 📥 **百度网盘（密码 2026）** ← **最新 v1.1.0，推荐** | [CathayFinder 综合性图书检索软件 1.1.0 标准版](https://pan.baidu.com/s/1pwxOiQYO6o2XVuL3oIHfpA?pwd=2026)（**程序 + 11 个渠道数据库 + CathayIndex，解压即用**，含本地文件库；不含个人网盘资料库本身） |
+| 🐙 GitHub Releases | [CathayFinder v1.0.0 公开版](https://github.com/zzhjim02/CathayFinder/releases/tag/v1.0.0)（Assets 下只有 `CathayFinder.exe`，**数据库仍需从上面的网盘取**） |
 | 💻 源码 | 本仓库源码：`py -3 -m pip install PyQt5 pypinyin zhconv` 后 `py -3 main.py` |
 
 > ⚠️ **本仓库只放程序，不放任何数据**：`data\`（11 个渠道的数据库，约 27 GB）**不在仓库里**
-> —— 请从上面百度网盘下载，并**与 exe 放在同一层**，否则搜不到任何结果。
+> —— 请从百度网盘下载，并**与 exe 放在同一层**，否则搜不到任何结果。
+>
+> 📌 **GitHub Release 里的 v1.0.0 是公开版**（功能一样，只是没有随包数据库）；
+> **带数据库的一键版走上面的百度网盘**。链接失效请在 Issues 里说一声。
 
 ---
 
 ## 🚀 三步就会用
 
-1. **双击 `CathayFinder 综合性图书检索引擎 1.0 标准版.exe`**（从 GitHub / 网盘下的包里就是 `CathayFinder.exe`）
+1. **双击 `CathayFinder 综合性图书检索软件 1.1 标准版.exe`**（网盘包里的就是它；GitHub 上只有 `CathayFinder.exe`）
 2. 搜索框里输入：书名 / 作者 / 出版社 / 编号（SSID）
 3. 回车 → 左边出结果列表，点某一行 → 右下角看详情
 
@@ -70,7 +77,7 @@
 
 | 渠道 | 里面是什么 | 库文件 | 条数 |
 |---|---|---|:---:|
-| 本地文件库 | 你自己电脑上扫进来的文件夹（用 [CathayIndex](https://github.com/zzhjim02/CathayIndex) 建） | `local_files.db` | 自建 |
+| 本地文件库 | 你自己电脑上扫进来的文件夹 —— **直接在软件上方的「📁 本地文件库索引」页签里建**，不用另开程序 | `local_files.db` | 自建 |
 | 学术信息数据库 | 个人百度网盘 + 阿里网盘的资料目录 | `baidu_pan.db` + `aliyun.db` | 586 万 + |
 | 读秀 | 读秀书目（含 SSID）+ 秒传码库 | `duxiu.db` + `duxiu_md5.db` | 511 万 + 3139 万 |
 | 维基共享资源 | Wikimedia Commons 书籍扫描件目录 | `wiki_lib.db` + `commons_books.db` | 338 万 + 827 万 |
@@ -83,6 +90,10 @@
 | 维基百科 | 中文维基百科全部条目 | `zhwiki.db` | 807 万 |
 
 **搜的时候不用挑库**（默认全选）；想只在某几个库里找，就改上方勾选框。
+
+> ❓「本地文件库」怎么来的：点窗口上方的 **「📁 本地文件库索引」页签** → 选要扫的文件夹 → 建库。
+> 建完不用重启，切回「🔍 检索」页签、勾上「本地文件库」就能搜。
+> （这一步原来要单独开一个小工具 **CathayIndex**，v1.1.0 起已经搬进主程序了。）
 
 ---
 
@@ -104,7 +115,7 @@
 | **维基文库** | `中文维基文库条目名称列表zhwikisource-20250701-all-titles.txt`（55 MB）+ `【繁转简】` 版 |
 | **维基百科** | `中文维基百科条目名称列表zhwiki-20250701-all-titles.txt`（168 MB）+ `【繁转简】` 版 |
 | **华中师大近史所** | `华中师范大学中国近代史研究所资料室索引 2.0（纯净版）/（前后对照版）/ 2022年9月版.docx` + `…藏书与全文检索、条目检索数据库藏书书目对照.xlsx` |
-| **本地文件库** | 不是外部数据：用 **CathayIndex** 扫描你自己的文件夹生成（示例库是 `E:\OCR综合` 的 3,523 个文件） |
+| **本地文件库** | 不是外部数据：在软件上方「📁 本地文件库索引」页签里扫你自己的文件夹生成（示例库是 `E:\OCR综合` 的 3,523 个文件）。以前要靠单独的小工具 CathayIndex，v1.1.0 起已搬进主程序 |
 
 > 其它同目录但**未**导入本工具的数据（`中国省级图书馆免费电子资源目录`（json/md）、
 > `维基共享资源-总目录` 里除 pdf/djvu/tif 以外的部分）保留在原地，需要时再说。
@@ -200,6 +211,16 @@ cathayfinder\
 
 ## 📝 更新日志
 
+- **v1.1.0**（2026-10-02）：**CathayIndex 搬进主程序**，一套东西一个窗口搞定
+  - 新增 **「📁 本地文件库索引」页签**：原来建「本地文件库」得单独开 CathayIndex 那个小程序，
+    现在就在 Finder 里做 —— 选目录 → 建库（全量 / 增量） → 建完**不用重启**，
+    切回「🔍 检索」页签勾上「本地文件库」直接搜
+  - **结果行上直接能操作**：点一行看详情的同时，那一行就有「📂 打开所在文件夹」「📋 复制SSID」按钮，
+    不用再去右下角找
+  - **导出可以挑字段**：11 个字段想导哪几个勾哪几个（只要书名+SSID 也行），不再每次全给
+  - 命中明细写清楚三笔账：`命中 = 显示 + 同库重复 + 读秀同书合并 + 渠道上限外未取`，
+    想知道有没有漏点「⬇ 再取更多」
+  - 完整性自检：公开版跑通 11 渠道、字段检索、读秀去重/拼音排序、导出去重、缺库置灰等一整套
 - **v1.0.0**（2026-09-20）：首个版本 —— 11 渠道精准检索、按字段搜、渠道分组连续、
   命中/已载/页数三笔账、读秀 SSID 去重 + 拼音排序 + 复制 SSID、详情面板「打开所在文件夹 / 打开网页」、
   可选字段导出全部结果、缺库自动置灰跳过、本地文件库渠道、单文件 exe（免安装）
