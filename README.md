@@ -51,20 +51,22 @@
 | 下载方式 | 说明 |
 |:-------|:-----|
 | 📥 **百度网盘（密码 2026）** ← **最新 v1.1.0，推荐** | [CathayFinder 综合性图书检索软件 1.1.0 标准版](https://pan.baidu.com/s/1pwxOiQYO6o2XVuL3oIHfpA?pwd=2026)（**程序 + 11 个渠道数据库 + CathayIndex，解压即用**，含本地文件库；不含个人网盘资料库本身） |
-| 🐙 GitHub Releases | [CathayFinder v1.0.0 公开版](https://github.com/zzhjim02/CathayFinder/releases/tag/v1.0.0)（Assets 下只有 `CathayFinder.exe`，**数据库仍需从上面的网盘取**） |
+| 🐙 GitHub Releases | [CathayFinder v1.1.0](https://github.com/zzhjim02/CathayFinder/releases/tag/v1.1.0)（Assets：`CathayFinder-v1.1.0.exe` 单程序 43 MB ／ `CathayFinder-v1.1.0-windows-x64.zip` 完整程序包 56 MB。**都不含数据库**） |
 | 💻 源码 | 本仓库源码：`py -3 -m pip install PyQt5 pypinyin zhconv` 后 `py -3 main.py` |
 
 > ⚠️ **本仓库只放程序，不放任何数据**：`data\`（11 个渠道的数据库，约 27 GB）**不在仓库里**
 > —— 请从百度网盘下载，并**与 exe 放在同一层**，否则搜不到任何结果。
 >
-> 📌 **GitHub Release 里的 v1.0.0 是公开版**（功能一样，只是没有随包数据库）；
-> **带数据库的一键版走上面的百度网盘**。链接失效请在 Issues 里说一声。
+> 📌 **两个地方的程序都是 v1.1.0，功能完全一样，区别只在数据库**：
+> 网盘版自带 27 GB 数据库（解压就能搜）；GitHub 版**只有程序** —— 适合你已经有一份 `data\db\`、
+> 只想换个新 exe 的情况（下 `CathayFinder-v1.1.0.exe` 覆盖旧的即可，`data` 不用动）。
+> 第一次用请走网盘。链接失效请在 Issues 里说一声。
 
 ---
 
 ## 🚀 三步就会用
 
-1. **双击 `CathayFinder 综合性图书检索软件 1.1 标准版.exe`**（网盘包里的就是它；GitHub 上只有 `CathayFinder.exe`）
+1. **双击 `CathayFinder.exe`**（网盘完整包里叫 `CathayFinder 综合性图书检索引擎 1.1 标准版.exe`，GitHub 版就叫 `CathayFinder.exe`，是同一个东西）
 2. 搜索框里输入：书名 / 作者 / 出版社 / 编号（SSID）
 3. 回车 → 左边出结果列表，点某一行 → 右下角看详情
 
@@ -211,13 +213,14 @@ cathayfinder\
 
 ## 📝 更新日志
 
-- **v1.1.0**（2026-10-02）：**CathayIndex 搬进主程序**，一套东西一个窗口搞定
+- **v1.1.0**（2026-10-03）：**CathayIndex 搬进主程序**，一套东西一个窗口搞定
   - 新增 **「📁 本地文件库索引」页签**：原来建「本地文件库」得单独开 CathayIndex 那个小程序，
     现在就在 Finder 里做 —— 选目录 → 建库（全量 / 增量） → 建完**不用重启**，
     切回「🔍 检索」页签勾上「本地文件库」直接搜
   - **结果行上直接能操作**：点一行看详情的同时，那一行就有「📂 打开所在文件夹」「📋 复制SSID」按钮，
     不用再去右下角找
   - **导出可以挑字段**：11 个字段想导哪几个勾哪几个（只要书名+SSID 也行），不再每次全给
+  - **导出不再被屏幕截断**：导出永远取全部结果（不受每渠道显示上限限制），读秀按 8 位 SSID 去重、按拼音 A→Z 排序
   - 命中明细写清楚三笔账：`命中 = 显示 + 同库重复 + 读秀同书合并 + 渠道上限外未取`，
     想知道有没有漏点「⬇ 再取更多」
   - 完整性自检：公开版跑通 11 渠道、字段检索、读秀去重/拼音排序、导出去重、缺库置灰等一整套
