@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton, QLabel, QTableWidget, QTableWidgetItem,
     QHeaderView, QSplitter, QTextEdit, QCheckBox, QGroupBox,
-    QMessageBox, QFileDialog, QStatusBar, QProgressBar,
+    QMessageBox, QFileDialog, QStatusBar, QProgressBar, QTabWidget,
     QAbstractItemView, QGridLayout, QDialog, QDialogButtonBox, QComboBox,
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
@@ -18,10 +18,12 @@ from PyQt5.QtWidgets import QToolTip
 from ..search.engine import (
     search, search_more, search_all, search_config,
     DB_SEARCH_CONFIG, FETCH_PER_DB, FETCH_INCREMENT, tidy_results,
-    PRIORITY_MAP, NAME_MAP, SEARCH_FIELDS,
+    PRIORITY_MAP, NAME_MAP, SEARCH_FIELDS, keyword_variants,
 )
 from ..data.db_manager import channel_available, channel_db_files, close_all
 from ..config import CHANNEL_COLORS
+# 原 CathayIndex（本地文件库索引工具）已并进主程序，做成第二个页签
+from .index_tab import LocalIndexTab
 
 PAGE_SIZE = 100
 DEFAULT_OFF_SOURCES = set()   # 默认全部勾选（含「维基共享资源」）
@@ -68,12 +70,74 @@ def load_export_fields():
         return list(DEFAULT_EXPORT_FIELDS)
 
 
-def save_export_fields(fields):
+def load_settings():
+    """读 cathayfinder_settings.json（整份），读不到给空表"""
+    try:
+        with open(_fields_path(), encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_setting(key, value):
+    """只改一个键，其余键原样保留（导出字段偏好不会被冲掉）"""
+    d = load_settings()
+    d[key] = value
     try:
         with open(_fields_path(), "w", encoding="utf-8") as f:
-            json.dump({"export_fields": list(fields)}, f, ensure_ascii=False, indent=2)
+            json.dump(d, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+
+def load_expand():
+    """「繁简通搜」上次的开关状态（默认开）"""
+    v = load_settings().get("expand_variants", True)
+    return bool(v)
+
+
+def save_expand(on):
+    save_setting("expand_variants", bool(on))
+
+
+def save_export_fields(fields):
+    save_setting("export_fields", list(fields))
+
+
+# ─────────────────────────── 搜索记录（最近 100 条） ───────────────────────────
+# 存在 cathayfinder_settings.json 的 search_history 里（新的在前），
+# 只留最近 MAX_HISTORY 条；同一句再搜一次就提到最前，不出现两条。
+MAX_HISTORY = 100
+
+
+def load_history():
+    """读搜索记录（过滤空串与非字符串，最多 100 条）"""
+    raw = load_settings().get("search_history")
+    if not isinstance(raw, list):
+        return []
+    out = []
+    for x in raw:
+        s = str(x or "").strip()
+        if s and s not in out:
+            out.append(s)
+        if len(out) >= MAX_HISTORY:
+            break
+    return out
+
+
+def save_history(items):
+    save_setting("search_history", list(items)[:MAX_HISTORY])
+
+
+def push_history(keyword, items=None):
+    """把这次搜的词提到最前，返回新的记录表（不改调用方传进来的表）"""
+    kw = (keyword or "").strip()
+    base = list(load_history() if items is None else items)
+    if not kw:
+        return base
+    out = [kw] + [x for x in base if x != kw]
+    return out[:MAX_HISTORY]
 
 
 def _field_value(r, key):
@@ -191,7 +255,8 @@ class ExportWorker(QThread):
     """
     done = pyqtSignal(bool, str)
 
-    def __init__(self, keyword, fmt, path, fallback_rows, fields=None, field='all'):
+    def __init__(self, keyword, fmt, path, fallback_rows, fields=None, field='all',
+                 expand=True):
         super().__init__()
         self.keyword = (keyword or "").strip()
         self.fmt = fmt
@@ -199,11 +264,13 @@ class ExportWorker(QThread):
         self.fallback_rows = list(fallback_rows or [])
         self.fields = list(fields) if fields else list(DEFAULT_EXPORT_FIELDS)
         self.field = field or 'all'
+        self.expand = bool(expand)
 
     def run(self):
         try:
             if self.keyword:
-                res, _seen, _meta = search_all(self.keyword, field=self.field)
+                res, _seen, _meta = search_all(self.keyword, field=self.field,
+                                               expand=self.expand)
             else:
                 res = self.fallback_rows
             rows, merged = tidy_results(res)
@@ -222,15 +289,17 @@ class ExportWorker(QThread):
 class SearchWorker(QThread):
     finished = pyqtSignal(list, set, dict)  # results, seen_keys, meta
 
-    def __init__(self, keyword, cap=None, field='all'):
+    def __init__(self, keyword, cap=None, field='all', expand=True):
         super().__init__()
         self.keyword = keyword
         self.cap = cap
         self.field = field
+        self.expand = bool(expand)
 
     def run(self):
         try:
-            results, seen, meta = search(self.keyword, cap=self.cap, field=self.field)
+            results, seen, meta = search(self.keyword, cap=self.cap, field=self.field,
+                                         expand=self.expand)
             self.finished.emit(results, seen, meta)
         except Exception:
             self.finished.emit([], set(), {})
@@ -239,17 +308,19 @@ class SearchWorker(QThread):
 class LoadMoreWorker(QThread):
     finished = pyqtSignal(list, set, dict)  # 新增结果, seen_keys, meta
 
-    def __init__(self, keyword, existing_seen, cap, field='all'):
+    def __init__(self, keyword, existing_seen, cap, field='all', expand=True):
         super().__init__()
         self.keyword = keyword
         self.field = field
         self.existing_seen = existing_seen
         self.cap = cap
+        self.expand = bool(expand)
 
     def run(self):
         try:
             new_results, seen, meta = search_more(
-                self.keyword, self.existing_seen, self.cap, field=self.field
+                self.keyword, self.existing_seen, self.cap, field=self.field,
+                expand=self.expand
             )
             self.finished.emit(new_results, seen, meta)
         except Exception:
@@ -539,20 +610,40 @@ class SearchApp(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("CathayFinder - 综合性图书检索引擎 (FTS5)")
+        self.setWindowTitle("CathayFinder v1.2.2 - 综合性图书检索引擎")
         self.setMinimumSize(1200, 750)
         self.setFont(QFont("Microsoft YaHei", 9))
 
         central = QWidget()
         self.setCentralWidget(central)
-        main = QVBoxLayout(central)
+        cv = QVBoxLayout(central)
+        cv.setContentsMargins(0, 0, 0, 0)
+        # 两个页签：检索（原来的界面原样不动） + 本地文件库索引（原 CathayIndex）
+        self.tabs = QTabWidget()
+        cv.addWidget(self.tabs)
+        page = QWidget()
+        main = QVBoxLayout(page)
+        self.tabs.addTab(page, "🔍 检索")
 
         # Search bar
         sr = QHBoxLayout()
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("输入关键词...（可只搜书名 / 作者 / 出版者 / SSID）")
+        # 搜索框做成「可编辑下拉框」：点右侧箭头就展开最近 100 条搜索记录，
+        # 选一条即填进输入框并可回车重搜；输入框本身照常打字、回车即搜。
+        self.search_input = QComboBox()
+        self.search_input.setEditable(True)
+        self.search_input.setInsertPolicy(QComboBox.NoInsert)   # 回车不自动塞进列表（由代码管）
+        self.search_input.setMaxVisibleItems(20)
         self.search_input.setFont(QFont("Microsoft YaHei", 11))
-        self.search_input.returnPressed.connect(self.do_search)
+        self.search_input.setFixedHeight(32)
+        self.search_input.lineEdit().setPlaceholderText(
+            "输入关键词...（点右侧箭头可看最近搜索记录）")
+        self.search_input.lineEdit().returnPressed.connect(self.do_search)
+        self.history = load_history()
+        self._fill_history()
+        self.search_input.activated[str].connect(self._on_history_pick)
+        self.search_input.setToolTip(
+            "下拉里是最近 %d 条搜索记录（新的在最上面）。\n"
+            "选一条就直接用它再搜一次；直接打字回车也行。" % MAX_HISTORY)
         self.field_combo = QComboBox()
         self.field_combo.setFont(QFont("Microsoft YaHei", 10))
         self.field_combo.setFixedHeight(32)
@@ -568,8 +659,18 @@ class SearchApp(QMainWindow):
         self.search_btn.setFont(QFont("Microsoft YaHei", 10))
         self.search_btn.setFixedHeight(32)
         self.search_btn.clicked.connect(self.do_search)
+        # 繁简通搜（参考 CathayHub）：打简体也能搜到繁体，反之亦然
+        self.s2t_cb = QCheckBox("繁简通搜")
+        self.s2t_cb.setChecked(load_expand())
+        self.s2t_cb.setToolTip(
+            "勾上后，检索词会自动铺开繁体 / 简体字形一起搜：\n"
+            "打「梁启超」也能搜到「梁啟超」「梁啓超」，打繁体同理。\n"
+            "（规则与 CathayHub 一致：OpenCC 四向铺开；关掉就只按输入原样搜）\n"
+            "注：搜编号（SSID/ISBN）时不受影响，编号没有繁简之分。")
+        self.s2t_cb.toggled.connect(save_expand)
         sr.addWidget(self.search_input, 1)
         sr.addWidget(self.field_combo)
+        sr.addWidget(self.s2t_cb)
         sr.addWidget(self.search_btn)
         main.addLayout(sr)
 
@@ -660,6 +761,13 @@ class SearchApp(QMainWindow):
         self.pb.hide()
         self.sb.addPermanentWidget(self.pb)
 
+        # 第二个页签：本地文件库索引（原 CathayIndex）
+        # 建完库回调主界面重新认一遍库文件，「本地文件库」渠道不用重启就亮起来
+        self.index_tab = LocalIndexTab(
+            on_db_changed=lambda: (self.source_group.refresh_availability(),
+                                   self.sb.showMessage("本地文件库已更新")))
+        self.tabs.addTab(self.index_tab, "📁 本地文件库索引")
+
     def _skipped_note(self):
         """库文件被删掉的渠道（已自动跳过）提示"""
         gone = [self.source_group.labels.get(k, k)
@@ -667,10 +775,47 @@ class SearchApp(QMainWindow):
                 if not channel_available(k)[0]]
         return "（已跳过库文件缺失的渠道：%s）" % "、".join(gone) if gone else ""
 
+    def _fill_history(self):
+        """把记录表刷进下拉框；保留输入框里正在打的字"""
+        cur = self.search_input.currentText()
+        was_empty = not cur
+        self.search_input.blockSignals(True)
+        self.search_input.clear()
+        self.search_input.addItems(self.history)
+        self.search_input.setCurrentIndex(-1)
+        self.search_input.setEditText("" if was_empty else cur)
+        self.search_input.blockSignals(False)
+
+    def _on_history_pick(self, text):
+        """从下拉里选了一条记录：填进输入框，直接用它重搜"""
+        text = (text or "").strip()
+        if not text:
+            return
+        self.search_input.setEditText(text)
+        self.do_search()
+
+    def _remember(self, kw):
+        """搜成功才记（空词不记）；同一句再搜就提到最前，最多留 100 条"""
+        new = push_history(kw, self.history)
+        if new != self.history:
+            self.history = new
+            save_history(new)
+            self._fill_history()
+
+    def _expand_note(self, kw):
+        """状态栏里注明「繁简通搜」这一轮实际铺开了哪些字形"""
+        if not self.s2t_cb.isChecked():
+            return ""
+        vs = keyword_variants(kw)[1:]
+        if not vs:
+            return "（繁简通搜：繁简同形，无需铺开）"
+        return "（繁简通搜：也搜 %s）" % "、".join(vs)
+
     def do_search(self):
-        kw = self.search_input.text().strip()
+        kw = self.search_input.currentText().strip()
         if not kw:
             return
+        self._remember(kw)                        # 记进下拉框（最近 100 条）
         self.source_group.refresh_availability()   # 库文件被删掉的渠道自动置灰/跳过
         self.kw = kw
         self.field = self.field_combo.currentData() or 'all'   # 检索字段
@@ -688,9 +833,11 @@ class SearchApp(QMainWindow):
         self.pb.show()
         self.pb.setRange(0, 0)
         self.sb.showMessage(f"搜索: {kw}" + ("（限定字段：%s）" % dict(SEARCH_FIELDS).get(
-            self.field, '') if self.field != 'all' else ""))
+            self.field, '') if self.field != 'all' else "")
+            + self._expand_note(kw))
 
-        self.worker = SearchWorker(kw, field=self.field)
+        self.worker = SearchWorker(kw, field=self.field,
+                                   expand=self.s2t_cb.isChecked())
         self.worker.finished.connect(self.on_search_done)
         self.worker.start()
 
@@ -917,7 +1064,8 @@ class SearchApp(QMainWindow):
         self.sb.showMessage(f"再取更多（每渠道 +{FETCH_INCREMENT:,} 条）...")
 
         self.lm_worker = LoadMoreWorker(self.kw, self.seen, (self.meta or {}).get('cap'),
-                                        field=getattr(self, 'field', 'all'))
+                                        field=getattr(self, 'field', 'all'),
+                                        expand=self.s2t_cb.isChecked())
         self.lm_worker.finished.connect(self.on_more_done)
         self.lm_worker.start()
 
@@ -983,7 +1131,8 @@ class SearchApp(QMainWindow):
         # 取全部 + 写文件放到后台线程（大词可能要几十秒，不让界面卡住）
         self.sb.showMessage("正在取全部命中结果（不限 5,000 条）并按勾选字段导出…")
         self.exp_worker = ExportWorker(self.kw, fmt, fp, self.results, fields,
-                                       field=getattr(self, 'field', 'all'))
+                                       field=getattr(self, 'field', 'all'),
+                                       expand=self.s2t_cb.isChecked())
         self.exp_worker.done.connect(self.on_export_done)
         self.exp_worker.start()
 

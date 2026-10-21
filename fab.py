@@ -12,9 +12,10 @@ os.chdir(HERE)
 NAME = 'CathayFinder'
 ENTRY = 'main.py'
 VERSION_SRC = ['cathayfinder/ui/app_gui.py']
-EXTRA = ['--collect-all', 'pypinyin', '--collect-all', 'zhconv']
+EXTRA = ['--collect-all', 'pypinyin', '--collect-all', 'zhconv',
+         '--collect-all', 'opencc']
 REPO = 'https://github.com/zzhjim02/CathayFinder'
-VERSION_OVERRIDE = '1.0'          # 界面标题里没写版本号，这里直接定
+VERSION_OVERRIDE = '1.2.2'        # 界面标题里没写版本号，这里直接定
 
 
 def version():
@@ -94,6 +95,12 @@ Z-Library / 中国地方志 / 奇点社科 / 游氏古籍 / 维基文库 / 华�
 <!-- 一句话说清这一版最重要的变化 -->
 
 - 只看结果、按渠道分组连续排列；顶部给出「命中 / 已载 / 页数」
+- **繁简通搜（v1.2.0 新增）**：检索词自动铺开繁体 / 简体字形一起搜，
+  打简体也能搜到繁体条目，反之亦然（规则与 CathayHub 一致）
+- **一字多繁补全（v1.2.1）**：汇→匯/彙、发→發/髮 这类一个字有多种繁体写法的，
+  各种写法都去搜（以前只搜一种，会漏掉另一批书）
+- **搜索记录（v1.2.2）**：点搜索框右侧箭头可看最近 100 条搜索记录，
+  选一条直接重搜；同一句再搜会提到最前，关掉软件也不丢
 - 支持按字段搜（书名 / 作者 / 出版者 / SSID）
 - 读秀按 8 位 SSID 去重、结果按拼音 A→Z 排序；读秀可一键复制 SSID
 - 详情面板可「📂 打开所在文件夹」「🌐 打开网页」

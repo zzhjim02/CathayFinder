@@ -6,6 +6,23 @@ from dataclasses import dataclass
 from typing import List, Optional
 from ..data.db_manager import (DB_CONFIG, db_key_for_file, db_variants,
                               get_db)
+from .variants import all_variants, MAX_VARIANTS
+
+# ─────────────────────────────────────────────────────────────────────
+# 繁简通搜（参考 CathayHub）：一个检索词先铺开全部繁/简字形，
+# 各字形之间 OR、词与词（分词后）之间 AND，一起交给 FTS5 / LIKE 去搜 ——
+# 打简体也能搜到繁体，反之亦然。纯数字（SSID/ISBN 类）不铺开。
+# 除整串转换外还做「逐字铺开」：汇→匯/彙 这类一字多繁都覆盖到。
+# ─────────────────────────────────────────────────────────────────────
+
+
+def keyword_variants(keyword):
+    """检索词 → [原词] + 繁简变体（去重、保序）；纯数字/空串只返回自身。"""
+    w = (keyword or '').strip()
+    if not w or w.isdigit():
+        return [w]
+    vs = all_variants(w, limit=MAX_VARIANTS)
+    return [w] + [v for v in vs if v]
 
 # 渠道顺序（与 db_manager.DB_CONFIG 的 priority 一致）
 # 「读秀」一个渠道 = duxiu.db + duxiu_md5.db（原读秀秒传码已并入）
@@ -251,6 +268,22 @@ def build_match_expr(keyword, cols=None):
     return ' '.join(parts)
 
 
+def build_match_expr_multi(keyword, cols=None, expand=True):
+    """繁简通搜版：每个字形各建一份精准查询式，字形之间 OR。
+
+    expand=False 或纯数字（编号/ISBN）时与 build_match_expr 等价。
+    """
+    if not expand:
+        return build_match_expr(keyword, cols)
+    words = keyword_variants(keyword)
+    exprs = []
+    for v in words:
+        e = build_match_expr(v, cols)
+        if e:
+            exprs.append(e if len(words) == 1 else '(%s)' % e)
+    return ' OR '.join(exprs)
+
+
 def _conn_tag(conn):
     """用数据库文件路径当缓存的 key（不能用 id(conn)：连接关了再开会复用地址，
     缓存就会串库 —— 这会让「按作者/出版者」在关闭重开后搜不到东西）"""
@@ -276,9 +309,11 @@ def _has_index(conn, tbl, col):
     return v
 
 
-def _field_lookup(cfg_cols, keyword, conn, tbl, col_names, limit, allow_like=True):
+def _field_lookup(cfg_cols, keyword, conn, tbl, col_names, limit, allow_like=True,
+                  expand=True):
     """编号(SSID/DXID) / ISBN 精确等值命中；以及按渠道配置列做「完整包含」匹配
-    （用于没建 FTS 的库）"""
+    （用于没建 FTS 的库）。expand 时「完整包含」对每个繁简字形都试一遍
+    （字形之间 OR、词与词之间 AND，每条记录只数一次）。"""
     kw = (keyword or '').strip()
     if not kw:
         return []
@@ -302,12 +337,52 @@ def _field_lookup(cfg_cols, keyword, conn, tbl, col_names, limit, allow_like=Tru
         toks = [t for t in _PUNCT_RE.sub(' ', kw).split() if t]
         if cols and toks:
             where = ' AND '.join(
-                '(' + ' OR '.join('"%s" LIKE ?' % c for c in cols) + ')' for _ in toks)
+                '(' + ' OR '.join('"%s" LIKE ?' % c for c in cols) + ')' for _t in toks)
             params = []
             for _t in toks:
                 params.extend(['%' + _t + '%'] * len(cols))
             jobs.append(('SELECT rowid, * FROM "%s" WHERE %s LIMIT ?' % (tbl, where),
                          params + [limit]))
+            # 繁简通搜：每个字形各查一遍，按 rowid 去重（同一记录只留一条）
+            if expand:
+                seen_ids = set()
+                merged = []
+                for word in keyword_variants(kw)[1:]:
+                    t2 = [t for t in _PUNCT_RE.sub(' ', word).split() if t]
+                    if not t2:
+                        continue
+                    where2 = ' AND '.join(
+                        '(' + ' OR '.join('"%s" LIKE ?' % c for c in cols) + ')'
+                        for _t in t2)
+                    p2 = []
+                    for _t in t2:
+                        p2.extend(['%' + _t + '%'] * len(cols))
+                    try:
+                        hit = conn.execute(
+                            'SELECT rowid, * FROM "%s" WHERE %s LIMIT ?' % (tbl, where2),
+                            p2 + [limit]).fetchall()
+                    except Exception:
+                        hit = []
+                    if hit:
+                        merged.append((hit, p2))
+                if merged:          # 有变体命中 → 先把主查询结果取回再加
+                    try:
+                        base_rows = conn.execute(
+                            'SELECT rowid, * FROM "%s" WHERE %s LIMIT ?' % (tbl, where),
+                            params + [limit]).fetchall()
+                    except Exception:
+                        base_rows = []
+                    out = []
+                    for r in base_rows:
+                        if r[0] not in seen_ids:
+                            seen_ids.add(r[0])
+                            out.append(r)
+                    for hit, _p in merged:
+                        for r in hit:
+                            if r[0] not in seen_ids:
+                                seen_ids.add(r[0])
+                                out.append(r)
+                    return out[:limit] if (limit is not None and limit >= 0) else out
     for sql, params in jobs:
         try:
             rows.extend(conn.execute(sql, params).fetchall())
@@ -316,11 +391,12 @@ def _field_lookup(cfg_cols, keyword, conn, tbl, col_names, limit, allow_like=Tru
     return rows
 
 
-def _field_rows(cfg, keyword, conn, tbl, col_names, field, limit):
+def _field_rows(cfg, keyword, conn, tbl, col_names, field, limit, expand=True):
     """字段检索（书名/作者/出版者/SSID）：
-    - author/publisher/title：优先用 items_fts 里对应的列做列过滤短语匹配；
-      主 FTS 没这列时，再看有没有旁挂索引表 field_fts（小库/大库都可能补过）。
-    - ssid：直接按编号等值/前缀查（有索引，很快）。
+    - author/publisher/title：优先用 items_fts 里对应的列做列过滤短语匹配
+      （expand 时繁简字形之间 OR）；主 FTS 没这列时，再看有没有旁挂索引表
+      field_fts（小库/大库都可能补过）。
+    - ssid：直接按编号等值/前缀查（有索引，很快；编号无繁简，不铺开）。
     返回行列表（行内含 rowid）。"""
     kw = (keyword or '').strip()
     if not kw:
@@ -352,7 +428,7 @@ def _field_rows(cfg, keyword, conn, tbl, col_names, field, limit):
     cols = FIELD_FTS_COLS.get(field) or ()
     fts_cols = _fts_cols_of(conn)
     use = [c for c in cols if c in fts_cols]
-    expr = build_match_expr(kw, use or None)
+    expr = build_match_expr_multi(kw, use or None, expand)
     if use:
         try:
             return list(conn.execute(
@@ -372,13 +448,14 @@ def _field_rows(cfg, keyword, conn, tbl, col_names, field, limit):
                 return list(conn.execute(
                     'SELECT r.rowid, r.* FROM "%s" r INNER JOIN field_fts f'
                     ' ON r.rowid = f.rowid WHERE field_fts MATCH ? LIMIT ?'
-                    % tbl, [build_match_expr(kw, use2), limit]).fetchall())
+                    % tbl, [build_match_expr_multi(kw, use2, expand), limit]).fetchall())
             except Exception:
                 return []
     return []
 
 
-def count_matches(cfg, keyword, conn, cols=None, match_expr=None, field='all'):
+def count_matches(cfg, keyword, conn, cols=None, match_expr=None, field='all',
+                  expand=True):
     """这个库里命中多少条（只数不取；用于给用户一个准确的总数）"""
     kw = (keyword or '').strip()
     if not kw:
@@ -400,7 +477,8 @@ def count_matches(cfg, keyword, conn, cols=None, match_expr=None, field='all'):
     if field != 'all':
         # 字段检索：总数也按字段数（列过滤 / 编号）
         try:
-            return len(_field_rows(cfg, keyword, conn, tbl, col_names, field, -1))
+            return len(_field_rows(cfg, keyword, conn, tbl, col_names, field, -1,
+                                   expand=expand))
         except Exception:
             return 0
     if has_fts and match_expr:
@@ -430,8 +508,11 @@ def count_matches(cfg, keyword, conn, cols=None, match_expr=None, field='all'):
             ['%' + digits + '%']))
     if not has_fts:
         cs = [c for c in (cfg_cols or []) if c in col_names]
-        toks = [t for t in _PUNCT_RE.sub(' ', kw).split() if t]
-        if cs and toks:
+        words = keyword_variants(kw) if expand else [kw]
+        for word in words:
+            toks = [t for t in _PUNCT_RE.sub(' ', word).split() if t]
+            if not (cs and toks):
+                continue
             where = ' AND '.join(
                 '(' + ' OR '.join('"%s" LIKE ?' % c for c in cs) + ')' for _ in toks)
             params = []
@@ -447,10 +528,12 @@ def count_matches(cfg, keyword, conn, cols=None, match_expr=None, field='all'):
     return total
 
 
-def query_db(cfg, keyword, conn, source_label, fetch_limit=500, cols=None, field='all'):
+def query_db(cfg, keyword, conn, source_label, fetch_limit=500, cols=None, field='all',
+             match_expr=None, expand=True):
     """单库检索：FTS5 短语精准匹配（完整包含查询串）+ 编号/ISBN 精确命中。
     没建 FTS 的库自动退回按列「完整包含」匹配。
-    field 不为 all 时只查指定字段（书名/作者/出版者/SSID）。"""
+    field 不为 all 时只查指定字段（书名/作者/出版者/SSID）。
+    match_expr 不传时按 keyword 现算；expand 时繁简字形一起搜。"""
     orig_tables = conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table'"
         " AND name NOT LIKE '%_fts%' AND name NOT LIKE 'sqlite%'"
@@ -479,11 +562,13 @@ def query_db(cfg, keyword, conn, source_label, fetch_limit=500, cols=None, field
 
     has_fts = bool(conn.execute(
         "SELECT 1 FROM sqlite_master WHERE name='items_fts' LIMIT 1").fetchall())
-    match_expr = build_match_expr(keyword)
+    if match_expr is None:
+        match_expr = build_match_expr_multi(keyword, expand=expand)
 
     if field != 'all':                       # 指定字段检索
         rows = _field_rows(cfg, keyword, conn, orig_tbl, col_names, field,
-                           -1 if fetch_limit is None or fetch_limit < 0 else fetch_limit)
+                           -1 if fetch_limit is None or fetch_limit < 0 else fetch_limit,
+                           expand=expand)
         return _rows_to_results(rows, col_names, source_label)
 
     rows = []
@@ -513,7 +598,7 @@ def query_db(cfg, keyword, conn, source_label, fetch_limit=500, cols=None, field
     if has_fts:
         # 有 FTS：只补编号/ISBN 精确命中（走索引，避免全表扫描）
         extra = _field_lookup(cfg_cols, keyword, conn, orig_tbl, col_names,
-                              fetch_limit, allow_like=False)
+                              fetch_limit, allow_like=False, expand=expand)
         if extra:
             seen_ids = set(r[0] for r in rows)
             for r in extra:
@@ -521,9 +606,9 @@ def query_db(cfg, keyword, conn, source_label, fetch_limit=500, cols=None, field
                     seen_ids.add(r[0])
                     rows.append(r)
     else:
-        # 没建 FTS 的库：按渠道列做「完整包含」匹配
+        # 没建 FTS 的库：按渠道列做「完整包含」匹配（繁简字形一起）
         rows = _field_lookup(cfg_cols, keyword, conn, orig_tbl, col_names,
-                             fetch_limit, allow_like=True)
+                             fetch_limit, allow_like=True, expand=expand)
     if fetch_limit is not None and fetch_limit >= 0:
         rows = rows[:fetch_limit]
 
@@ -619,17 +704,18 @@ def _enrich_md5(results):
             r.extra = ((r.extra + "  ") if r.extra else "") + "  ".join(bits)
 
 
-def search(keyword, cap=None, field='all'):
+def search(keyword, cap=None, field='all', expand=True):
     """搜索入口：把每个渠道的结果一次取回（按渠道分组）。
 
     field: 'all'=全部字段（默认）；'title'/'author'/'publisher'/'ssid'=只查该字段。
+    expand: 繁简通搜 —— 检索词自动铺开繁/简字形一起搜（编号类纯数字不铺开）。
 
     自动模式（cap=None）：每个渠道命中 ≤ HARD_CAP 条就全取，超过就取前
     HARD_CAP 条，同时给出库内命中总数；cap=N 时每渠道最多取 N 条；
     **cap<=0 表示不限量，把命中全部取回**（导出用）。
 
     返回 (results, seen_keys, meta)
-    meta = {'cap', 'keyword', 'field', 'hard_cap', 'unlimited',
+    meta = {'cap', 'keyword', 'field', 'expand', 'hard_cap', 'unlimited',
             'totals': {渠道: {'total': 库内命中, 'loaded': 实际取回, 'limit': 取值上限}}}
     """
     if not keyword or not keyword.strip():
@@ -639,7 +725,7 @@ def search(keyword, cap=None, field='all'):
     unlimited = (cap is not None and cap <= 0)   # 不限量
     auto = (cap is None)
 
-    match_expr = build_match_expr(keyword)
+    match_expr = build_match_expr_multi(keyword, expand=expand)
     all_results = []
     seen = set()
     totals = {}
@@ -656,7 +742,8 @@ def search(keyword, cap=None, field='all'):
             if not conn:
                 continue
             try:
-                n = count_matches(cfg, keyword, conn, cols, match_expr, field)
+                n = count_matches(cfg, keyword, conn, cols, match_expr, field,
+                                  expand=expand)
             except Exception:
                 n = 0
             if n:
@@ -674,7 +761,8 @@ def search(keyword, cap=None, field='all'):
                 t['limit'] += limit
             try:
                 results = query_db(cfg, keyword, conn, label,
-                                   fetch_limit=limit, cols=cols, field=field)
+                                   fetch_limit=limit, cols=cols, field=field,
+                                   match_expr=match_expr, expand=expand)
             except Exception:
                 results = []
             for r in results:
@@ -691,16 +779,16 @@ def search(keyword, cap=None, field='all'):
         t['loaded'] += 1
 
     meta = {'cap': cap, 'totals': totals, 'keyword': keyword, 'field': field,
-            'hard_cap': HARD_CAP, 'unlimited': unlimited}
+            'expand': bool(expand), 'hard_cap': HARD_CAP, 'unlimited': unlimited}
     return all_results, seen, meta
 
 
-def search_all(keyword, field='all'):
+def search_all(keyword, field='all', expand=True):
     """导出专用：不限量，把命中的全部取回（cap<=0）"""
-    return search(keyword, cap=-1, field=field)
+    return search(keyword, cap=-1, field=field, expand=expand)
 
 
-def search_more(keyword, existing_seen, cap=None, field='all'):
+def search_more(keyword, existing_seen, cap=None, field='all', expand=True):
     """把每个渠道的上限再抬高一档，多取一批（结果依旧按渠道分组）
 
     直接重跑一次搜索(cap 更大)，再把已有的剔掉；因为 bm25 排序是确定的，
@@ -708,7 +796,7 @@ def search_more(keyword, existing_seen, cap=None, field='all'):
     """
     base = cap or HARD_CAP
     new_cap = base + FETCH_INCREMENT
-    all_results, seen, meta = search(keyword, cap=new_cap, field=field)
+    all_results, seen, meta = search(keyword, cap=new_cap, field=field, expand=expand)
     fresh = []
     for r in all_results:
         dk = _dedup_key(r)

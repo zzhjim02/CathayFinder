@@ -2,16 +2,17 @@
 
 # 🔍 CathayFinder
 
-**综合性图书检索引擎 · 11 个渠道，一口气查N本书（找 SSID / 找路径 / 找文件）**
+**综合性图书检索引擎 · 11 个渠道，一口气查一本书（找 SSID / 找路径 / 找文件）**
 
-*开箱即用 · 双击即开 · 纯本地 · 不联网 · 绝不修改你的任何文件*
+*开箱即用 · 双击即开 · 纯本地 · 不联网 · 绝不修改你的任何文件 · 简繁通搜*
 
 [![license](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows%2010%2B-brightgreen)]()
-[![version](https://img.shields.io/badge/version-v1.1.0-orange)]()
+[![version](https://img.shields.io/badge/version-v1.2.2-orange)]()
 
 只做**精准匹配**（完整包含你输入的那串字），不做模糊搜索 —— 搜「布罗代尔」只会出真正含
-「布罗代尔」的记录，不会塞给你一堆无关书。
+「布罗代尔」的记录，不会塞给你一堆无关书。**但简繁两种写法都算同一个词**：
+打简体「汇编」也能搜到繁体条目，打繁体亦然（含「汇 → 匯 / 彙」这类一字多繁）。
 
 </div>
 
@@ -28,9 +29,9 @@
 | ② | [CathayOCR](https://github.com/zzhjim02/CathayOCR) | 扫描件做 OCR → 能搜索、能复制的 PDF | v1.3.5 稳定 / v1.2.4 旧版 |
 | ③ | [CathayRestore](https://github.com/zzhjim02/CathayRestore) | 把 OCR 出来的 TXT 写回 PDF，做成双层 | v1.0.0 |
 | ④ | [CathayExtract](https://github.com/zzhjim02/CathayExtract) | 已经是双层 PDF → 直接把文字抽成 TXT | v1.2.3 |
-| ⑤ | [CathayShelf](https://github.com/zzhjim02/CathayShelf) | 批量建档归位、规范命名、繁简转换 | v0.4.8 |
-| **⑥** | **CathayFinder（你在这里）** | 11 个渠道查这本书在哪（找书号 / 找路径） | **v1.1.0** |
-| ⑦ | [CathayHub](https://github.com/zzhjim02/CathayHub) | **索引 + 全库检索 + 浏览阅读，四合一的日常入口** | v0.3.16 |
+| ⑤ | [CathayShelf](https://github.com/zzhjim02/CathayShelf) | 批量建档归位、规范命名、繁简转换 | v0.5.2 |
+| **⑥** | **CathayFinder（你在这里）** | 11 个渠道查这本书在哪（找书号 / 找路径） | **v1.2.2** |
+| ⑦ | [CathayHub](https://github.com/zzhjim02/CathayHub) | **索引 + 全库检索 + 浏览阅读，四合一的日常入口** | v0.3.23 |
 
 > 🧭 **最常用的一条线**：⑥ 查到书 → ① 转成 PDF → ② 让它能搜 → ⑤ 著录归架 → ⑦ 检索、翻开。
 > 每一步都能单独用，不强制串起来；整套**纯本地、不联网、不动你的原件**。
@@ -56,23 +57,23 @@
 
 | 下载方式 | 说明 |
 |:-------|:-----|
-| 📥 **百度网盘（密码 2026）** ← **最新 v1.1.0，推荐** | [CathayFinder 综合性图书检索软件 1.1.0 标准版](https://pan.baidu.com/s/1pwxOiQYO6o2XVuL3oIHfpA?pwd=2026)（**程序 + 11 个渠道数据库 + CathayIndex，解压即用**，含本地文件库；不含个人网盘资料库本身） |
-| 🐙 GitHub Releases | [CathayFinder v1.1.0](https://github.com/zzhjim02/CathayFinder/releases/tag/v1.1.0)（Assets：`CathayFinder-v1.1.0.exe` 单程序 43 MB ／ `CathayFinder-v1.1.0-windows-x64.zip` 完整程序包 56 MB。**都不含数据库**） |
-| 💻 源码 | 本仓库源码：`py -3 -m pip install PyQt5 pypinyin zhconv` 后 `py -3 main.py` |
+| 📥 **百度网盘（密码 2026）** ← **最新 v1.2.2，推荐** | [CathayFinder 综合性图书检索软件 1.2.2 标准版](https://pan.baidu.com/s/1pwxOiQYO6o2XVuL3oIHfpA?pwd=2026)（**程序 + 11 个渠道数据库，解压即用**，含本地文件库；不含个人网盘资料库本身） |
+| 🐙 GitHub Releases | [CathayFinder v1.2.2](https://github.com/zzhjim02/CathayFinder/releases/tag/v1.2.2)（Assets：`CathayFinder-v1.2.2.exe` 单程序 43 MB ／ `CathayFinder-v1.2.2-windows-x64.zip` 完整程序包 56 MB。**都不含数据库**） |
+| 💻 源码 | 本仓库源码：`py -3 -m pip install PyQt5 pypinyin zhconv opencc` 后 `py -3 main.py` |
 
 > ⚠️ **本仓库只放程序，不放任何数据**：`data\`（11 个渠道的数据库，约 27 GB）**不在仓库里**
 > —— 请从百度网盘下载，并**与 exe 放在同一层**，否则搜不到任何结果。
 >
-> 📌 **两个地方的程序都是 v1.1.0，功能完全一样，区别只在数据库**：
+> 📌 **两个地方的程序都是 v1.2.2，功能完全一样，区别只在数据库**：
 > 网盘版自带 27 GB 数据库（解压就能搜）；GitHub 版**只有程序** —— 适合你已经有一份 `data\db\`、
-> 只想换个新 exe 的情况（下 `CathayFinder-v1.1.0.exe` 覆盖旧的即可，`data` 不用动）。
+> 只想换个新 exe 的情况（下 `CathayFinder-v1.2.2.exe` 覆盖旧的即可，`data` 不用动）。
 > 第一次用请走网盘。链接失效请在 Issues 里说一声。
 
 ---
 
 ## 🚀 三步就会用
 
-1. **双击 `CathayFinder.exe`**（网盘完整包里叫 `CathayFinder 综合性图书检索引擎 1.1 标准版.exe`，GitHub 版就叫 `CathayFinder.exe`，是同一个东西）
+1. **双击 `CathayFinder.exe`**（网盘完整包里叫 `CathayFinder 综合性图书检索引擎 1.2 标准版.exe`，GitHub 版就叫 `CathayFinder.exe`，是同一个东西）
 2. 搜索框里输入：书名 / 作者 / 出版社 / 编号（SSID）
 3. 回车 → 左边出结果列表，点某一行 → 右下角看详情
 
@@ -133,6 +134,15 @@
 ## 🎯 检索规则
 
 - **精准匹配**：按「完整包含」匹配，不做模糊/近似；错一个字就是没有
+- **繁简通搜（v1.2.0 起）**：检索词自动铺开**繁体 / 简体**各种字形一起搜 ——
+  打简体「梁启超」能搜到「梁啟超」，打繁体「鬱達夫」能搜到「郁达夫」。
+  规则与 [CathayHub](https://github.com/zzhjim02/CathayHub) 一致，并**额外补全「一字多繁」**（见下）
+- **一字多繁补全（v1.2.1 起）**：一个字有几种繁体写法时，**每种都去搜**。
+  例：「汇」的繁体有 **匯** 和 **彙** 两种，「汇编」既可能是「匯編」也可能是「彙編」，
+  两种写法都会命中（以前只搜一种，会漏掉另一批书）。同类的还有
+  发 → 發 / 髮、历 → 歷 / 曆、系 → 係 / 繫、干 → 乾 / 幹 等
+- **搜索记录（v1.2.2 起）**：搜索框是一个**下拉框**，点右侧箭头可看**最近 100 条**搜索记录，
+  选一条直接重搜；同一句再搜会自动提到最前；关掉软件也不丢
 - **按字段搜**：搜索框右边下拉 —— 全部字段 / 搜书名 / 搜作者 / 搜出版者 / 搜SSID（支持只写前几位，如 `1429`）
 - **每渠道先取**：单个渠道命中很少（≤5000 条）时**全部取回**；命中极多时先取 5000 条，
   顶部明细会写清：`命中 = 显示 + 同库重复 + 读秀同书合并 + 渠道上限外未取`，点「⬇ 再取更多」继续
@@ -172,10 +182,10 @@
 ## 🛠 自己打包 EXE
 
 ```bat
-py -3 -m pip install PyQt5 pypinyin zhconv pyinstaller
+py -3 -m pip install PyQt5 pypinyin zhconv opencc pyinstaller
 py -3 -m PyInstaller --noconfirm --clean --onefile --windowed ^
     --name CathayFinder --icon app.ico --add-data "app.ico;." ^
-    --collect-all pypinyin --collect-all zhconv ^
+    --collect-all pypinyin --collect-all zhconv --collect-all opencc ^
     --distpath dist --workpath build --specpath . main.py
 ```
 
@@ -192,13 +202,16 @@ main.py                      入口
 CathayFinder.spec            打包配置（onefile）
 fab.py / 发版.bat            一键发版（打包 + SHA256 + 发行说明）
 发布流程.md                  发版清单
-requirements.txt             依赖（PyQt5 / pypinyin / zhconv）
+requirements.txt             依赖（PyQt5 / pypinyin / zhconv / opencc）
 LICENSE                      GPL-3.0
 cathayfinder\
   ├─ config.py               路径 / 渠道优先级 / 颜色
   ├─ data\db_manager.py      渠道 → 数据库文件对应表（一个渠道可挂多个库）
   ├─ search\engine.py        FTS5 检索引擎（精准匹配 / 字段检索 / 去重 / 排序 / 计数）
-  └─ ui\app_gui.py           界面（结果表 / 详情面板 / 导出）
+  ├─ search\variants.py      繁简通搜（字形铺开 / 一字多繁补全）
+  ├─ index\fileindex.py      本地文件库建库（扫描 / 增量 / 索引）
+  └─ ui\app_gui.py           界面（结果表 / 详情面板 / 导出 / 搜索记录）
+     ui\index_tab.py         「📁 本地文件库索引」页签
 ```
 
 ---
@@ -219,6 +232,23 @@ cathayfinder\
 
 ## 📝 更新日志
 
+- **v1.2.2**（2026-10-21）：**搜索记录** —— 常搜的词不用每次重新打了
+  - 搜索框改成**下拉框**：点右侧箭头就能看**最近 100 条**搜索记录，选一条直接重搜
+  - 同一句再搜一次会自动**提到最前**（不会重复攒一堆一样的）
+  - 记录**存在本地设置里**，关掉软件再开还在；不联网、不上传
+  - 顺手修了设置写入：以前改一个选项会把别的选项一起冲掉，现在只写自己那一项
+- **v1.2.1**（2026-10-21）：**一字多繁补全** —— 一种繁体写法不漏
+  - 起因：搜「中国古代汉族与少数民族关系史料汇编」搜不到
+    `SSID-14417622_中國古代漢族與少數民族關係史料匯編_第4輯_清_下_1.pdf`，
+    换成繁体才搜得到 —— 因为「汇」有 **匯** 和 **彙** 两种繁体，而转换表只给了一种
+  - 现在按单字表把每种繁体写法都铺开搜索（发 → 發/髮、历 → 歷/曆、系 → 係/繫、干 → 乾/幹 …）
+  - 同时保证不会拼出「史料匯编」这类**半简半繁的废串**（只保留同一书写系统的字形组合）
+  - 实测：`鬱達夫` 从 0 条 → 2897 条；`歐陽修` 608 → 3322 条；`錢鍾書` 23 → 200 条
+- **v1.2.0**（2026-10-21）：**繁简通搜** —— 打简体也能搜到繁体，反之亦然
+  - 检索词自动做简体 ↔ 繁体 ↔ 台湾正体 ↔ 香港繁体**四向铺开**，所有写法一起搜
+  - 规则与 [CathayHub](https://github.com/zzhjim02/CathayHub) 一致
+  - 只影响「同一个词的不同写法」，**不做模糊匹配** —— 该搜不到的仍然搜不到
+  - 顶部会注明本次实际搜了哪几种写法，心里有数
 - **v1.1.0**（2026-10-03）：**CathayIndex 搬进主程序**，一套东西一个窗口搞定
   - 新增 **「📁 本地文件库索引」页签**：原来建「本地文件库」得单独开 CathayIndex 那个小程序，
     现在就在 Finder 里做 —— 选目录 → 建库（全量 / 增量） → 建完**不用重启**，

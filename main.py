@@ -30,6 +30,18 @@ if __name__ == "__main__":
             app = QApplication([])
             w = SearchApp()
             lines.append("gui=OK 渠道数=%d" % len(w.source_group.checkboxes))
+            # 本地文件库索引页签（原 CathayIndex 已并进主程序）
+            from cathayfinder.ui.index_tab import LocalIndexTab
+            from cathayfinder.index import fileindex as _FI
+            _it = getattr(w, "index_tab", None)
+            index_ok = isinstance(_it, LocalIndexTab) and w.tabs.count() == 2
+            index_ok = bool(index_ok) and _it.lst is not None and _it.tv is not None
+            lines.append("index-tab=%s 页签=%s"
+                         % ("OK" if index_ok else "FAIL",
+                            [w.tabs.tabText(i) for i in range(w.tabs.count())]))
+            lines.append("index-默认库=%s" % _it.db_path())
+            lines.append("index-引擎自检=%s"
+                         % (_FI.selftest().strip().splitlines()[-1]))
             # 「操作」列自检：本地文件库行有「打开所在文件夹」按钮，读秀行有「打开网页」按钮
             from PyQt5.QtWidgets import QPushButton
             from cathayfinder.search.engine import SearchResult
@@ -190,12 +202,36 @@ if __name__ == "__main__":
             lines.append("duxiu-sort=按A→Z有序:%s 前3条:%s"
                          % (ordered,
                             [ (E._name_of(r))[:18] for r in w.results if r.source == "读秀"][:3]))
+            # 繁简通搜 · 一字多繁：打简体也要带上「匯編」这种另一种繁体写法
+            from cathayfinder.search import variants as _V
+            _vt = _V.all_variants("中国古代汉族与少数民族关系史料汇编")
+            yiduo_ok = (any("彙編" in x for x in _vt) and any("匯編" in x for x in _vt))
+            _nojunk = not any("匯编" in x or "彙编" in x for x in _vt)
+            lines.append("fanti-yiduo=汇→彙/匯 两种都覆盖=%s 无半简半繁废组合=%s 共%d个"
+                         % (yiduo_ok, _nojunk, len(_vt)))
+            # 搜索记录：可编辑下拉框 + 最近 100 条（只测逻辑，不写真实设置）
+            from cathayfinder.ui import app_gui as _H
+            _h0 = _H.push_history("甲", [])
+            _h1 = _H.push_history("乙", _h0)
+            _h2 = _H.push_history("甲", _h1)
+            _hm = []
+            for _i in range(150):
+                _hm = _H.push_history("词%d" % _i, _hm)
+            from PyQt5.QtWidgets import QComboBox as _QCB
+            hist_ok = (_h2 == ["甲", "乙"] and len(_hm) == 100
+                       and _hm[0] == "词149"
+                       and isinstance(w.search_input, _QCB)
+                       and w.search_input.isEditable())
+            lines.append("search-history=去重提前:%s 上限%d条:%s 搜索框可下拉:%s"
+                         % (_h2 == ["甲", "乙"], len(_hm), len(_hm) == 100,
+                            w.search_input.isEditable()))
             if (dups or other_before != other_after or d2 or o2 != other_before
                     or not ordered or not grouped or w.table.columnCount() != 7
                     or acts[0] != ["📂 打开所在文件夹"] or acts[1] != ["📋 复制SSID"]
                     or acts[2] != [] or dbtns != ["📋 复制 SSID"]
                     or note_bad or not export_all_ok or not fields_ok
-                    or not dbmiss_ok or not icon_ok or not fields_ok2):
+                    or not dbmiss_ok or not icon_ok or not fields_ok2
+                    or not index_ok or not yiduo_ok or not _nojunk or not hist_ok):
                 lines.append("result=FAIL")
             else:
                 lines.append("result=OK")
